@@ -1,0 +1,428 @@
+---
+title: "Internet Usage and Voting Trends in Canada"
+
+author: 
+  - Mahak Jain
+thanks: "Code and data are available at: https://github.com/MahakJain74/finalpaper_canadianvoting."
+date: "`r format(Sys.time(), '%d %B %Y')`"
+abstract: "Understanding the demographics of voting is essential for every country to include policies for a larger voter turnout. This paper understands the relationship between the characteristics of an individual such as social media usage and internet usage,voting participation and to understand the relationship between them. These findings help implement policies to ensure better voter participation and also understand trends in voter turnout. Keywords: voting, internet, social media, volunteer, gender, toronto residents"
+
+output:
+  bookdown::pdf_document2
+toc: FALSE
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(tidyverse)
+library(patchwork)
+library(sf) # the base package manipulating shapes
+library(rgdal) # geo data abstraction library
+library(geojsonio) # geo json input and output
+library(spdplyr) # the `dplyr` counterpart for shapes
+library(rmapshaper) # the package that allows geo shape transformation
+library(magrittr) # data wrangling
+library(dplyr)
+library(tidyr)
+
+library(gtsummary)
+
+data <- read.csv("cleaned_gss.csv")
+regdata <-read.csv("regression_data_gss.csv")
+```
+
+
+# Introduction
+Internet consumption is a worldwide phenomenon. Globally, the number of Internet users increased from only 413 million in 2000 to over 3.4 billion in 2016 alone. The usage and accessibility of internet consumption depend on several factors, differing through socioeconomic factors and demographically. Internet usage has become a prominent part of everyone's daily life, from an accessory to a necessity. In 2019, Canada had an estimated 34.56 million internet users. Over 96.5% of Canadians have access to the internet in their households.
+
+There exists a long tradition of research documents and demographic and psychological determinants of political participation, there exists evidence to suggest that changes in communication technology may play an important role in influencing electoral behavior @mcneal. Web-based and theoretical studies often claim that Internet use can mobilize political participation, while survey-based studies generally conclude that Internet use will normalize political participation @hirzalla.
+
+Voter turnout in Canada has declined in the last several decades in Canada, now being the lowest in the western world (@jstor). According to research by Milner, ‘countries that have the most politically knowledgeable voters have the highest voter turnout and that when information levels are high, individuals are more likely to vote’ (@jstor). The Internet may enhance voter information about candidates and elections, and in turn, stimulate increased participation @mcneal. Though many European jurisdictions have established well-developed online voting models, Canada is quickly emerging as an important research case. To date, there have been more instances of remote Internet voting in local Canadian elections than in any other country. There have been more than two million remote Internet voting opportunities in over 90 local Canadian elections. This paper explores internet usage and political engagement with voter participation and turnout in federal, municipal, and provincial voting.
+
+The Internet may enhance voter information about candidates and elections, and in turn, stimulate increased participation @mcneal. Though many European jurisdictions have established well-developed online voting models, Canada is quickly emerging as an important research case. To date, there have been more instances of remote Internet voting in local Canadian elections than in any other country. There have been more than two million remote Internet voting opportunities in over 90 local Canadian elections. This paper explores internet usage and political engagement with voter participation and turnout in federal, municipal, and provincial voting.
+
+This report is divided into three sections. The first section outlines the data that has been used to support the later analysis. Next, the second section discusses the trends observed from the data. Finally, the last section explores the progress that has been made in this report, the weakness of the analysis, and the future directions. The data and code that support this report can be found in the Github repository: 
+
+
+
+# Data
+
+The cleaning, analysis, and visualization of the dataset in this paper were produced with the R statistical programming language @citeR and in R markdown file format. Features from several packages were used for the data. The haven @haven, janitor @janitor, and tidyverse @tidyverse package is used for data cleaning and manipulation. Analysis and figures were created using ggplot @ggplot. Other packages such as tidyr @tidyr, patchwork @patchwork, sf @sf, dplyr @dplyr.
+
+## Data Source and Features
+
+The General Social Survey, Cycle 27, Social Identity was conducted in 2013. It is a cross-sectional survey sample. This paper uses General Social Survey, Cycle 27, Social Identity microdata focusing on two aspects: social networks and civic participation. 
+A few key time-use metrics gathered are voter participation in federal elections, voter participation in municipal elections, voter participation in provincial elections, social networking accounts, internet usage, internet usage to buy goods and services, and internet usage for electronic banking. Not all variables are related to time-use as the survey is also interested in other metrics as well such as the respondent’s sex, income, marital status, number of children, and other variables that are relevant to social policy. There exists a large variation for the respondents, for example, for most of the variables there exists “Don’t know” or “Valid skip” to account for uncertainty from the respondents. Due to this, accurate information can be collected by respondents. To ensure data accuracy, the respondents who have access to their telephones are contacted for an interview to ensure receiving relevant information. The survey sample doesn't include respondents proportionate to their provinces and doesn't account for territories in Canada, therefore it is not representative of the Canadian population. The location of the respondents based on the original survey, General Social Survey: Social Identity, 2013, is shown in (Figure \@ref(fig:figmap)), made using the province's longitude and latitude.
+
+
+```{r, include=FALSE}
+#Make a Map of respondents
+
+library(ggmap)
+
+#Adding longitude and latitude to the data
+
+map_data <- data[, c("prov", "sex")]
+map_data[ , 'lon'] <- NA
+map_data[ , 'lat'] <- NA
+
+#Adding longitude and latitude codes according to province
+map_data <- within(map_data, lon[prov == 'Alberta' ] <- -115.0 )
+map_data <- within(map_data, lat[prov == 'Alberta' ]  <- 53.93)
+map_data <- within(map_data, lon[prov == 'Ontario' ] <- -85.00)
+map_data <- within(map_data, lat[prov == 'Ontario' ]  <- 51.25)
+map_data <- within(map_data, lon[prov == 'Quebec' ] <- -71.254)
+map_data <- within(map_data, lat[prov == 'Quebec' ]  <- 46.829)
+map_data <- within(map_data, lon[prov == 'British Columbia' ] <- -127.647)
+map_data <- within(map_data, lat[prov == 'British Columbia' ]  <- 53.726)
+map_data <- within(map_data, lon[prov == 'Nova Scotia' ] <- -63.0)
+map_data <- within(map_data, lat[prov == 'Nova Scotia' ]  <- 45.0)
+map_data <- within(map_data, lon[prov == 'Saskatchewan' ] <- -106.0)
+map_data <- within(map_data, lat[prov == 'Saskatchewan' ]  <- 55.0)
+map_data <- within(map_data, lon[prov == 'Manitoba' ] <- -98.73)
+map_data <- within(map_data, lat[prov == 'Manitoba' ]  <- 56.41)
+map_data <- within(map_data, lon[prov == 'Newfoundland and Labrador' ] <- -60)
+map_data <- within(map_data, lat[prov == 'Newfoundland and Labrador' ]  <- 53.13)
+map_data <- within(map_data, lon[prov == 'New Brunswick' ] <- -66.15)
+map_data <- within(map_data, lat[prov == 'New Brunswick' ]  <- 46.49)
+map_data <- within(map_data, lon[prov == 'Prince Edward Island' ] <- -63)
+map_data <- within(map_data, lat[prov == 'Prince Edward Island' ]  <- 46.25)
+
+#Creating a map
+bbox_canada <-
+  c(
+    left = -163.9,
+    bottom = 39.0,
+    right = -52.083,
+    top = 83.133
+  )
+
+library("ggplot2")
+
+canada_stamen_map <-
+  get_stamenmap(bbox_canada, zoom = 6, maptype = "toner-lite")
+
+map_data <- transform(map_data, lon = as.numeric(lon))
+map_data <- transform(map_data, lat = as.numeric(lat))
+```
+
+```{r figmap, fig.cap="A map showing the approximate location of survey respondents", echo = FALSE, message = FALSE, warning = FALSE}
+
+
+prov <- c("Alberta", "British Columbia", "Manitoba", "New Brunswick", "Newfoundland and Labrador" , "Nova Scotia", "Ontario", "Prince Edward Island", "Quebec", "Saskatchewan" )
+count <- c(3651, 3292, 2035, 1272,992,1638,7187,493,5301, 1673)
+lon <- c(-115,-127.647, -98.73, -66.15, -60,-63.0, -85.00, -63, -71.254,-106.0 )
+lat <- c(53.93,53.726, 56.41, 46.49,53.13, 45.0, 51.25, 46.25, 46.829,55.0 )
+
+map_data_small <- data.frame(prov, count, lon, lat)
+
+ggmap(canada_stamen_map) +
+  geom_point(data = map_data_small,
+             aes(x = lon, size = count, color = prov, y = lat)
+             ) +
+  labs(x = "Longitude",
+       y = "Latitude") +
+  theme_minimal() 
+```
+
+
+## Potential Ethical and Bias Concerns
+
+There exists a bias in the Canadian General Social Survey and this paper due for several reasons. In the 2013 Canadian General Survey: Social Identity, all provinces were included except Yukon, Nunavut, and Northwest territories, leading to sampling errors. Exclusion of these territories, specifically the ones housing marginalized communities and only targeting respondents with access to a telephone leads to exclusion in the data frame and other policies formed based on the information. There exist questions about gender in the survey. Respondents are only given two binary options, with other options such as “Don’t know” or “Refusal”. Therefore in a way, eliminating the existence of other groups. Additionally, this also does not give an opportunity for those people who have intersectional identities to feel comfortable and accepted by the political system in Canada. 
+
+Moreover, there exists non-response bias and voluntary bias. Exclusions based on socioeconomic standpoint as equal opportunity is not given to all Canadians answering the survey as they can only access it if they have a stable telephone connection. There may exist voluntary bias due to respondents choosing not to answer certain survey questions due to privacy or reduction of invasivity.  There exist non-sampling errors in the survey, which occurs when respondents give a ‘wrong’ answer to the questions, due to it being more desirable. 
+
+## Data Terminology
+
+
+### Voting
+
+The (Figure \@ref(fig:votedlast)) is made using @ggplot. It shows the voter participation in the last federal election by age amongst the respondents. As respondents age, voter participation gradually increases, and by age 55-54, it starts to decrease. In this, the higher number of no voter participation is for the ages 15-24 but this could be due to non-eligibility, whereas for the ages 25 and above, there still exists a high number of respondents who did not vote in the last federal elections. The number of respondents who did not vote in the last federal election gradually decreases as respondents’ age increases. Here it is important to note that there may exist cases of ineligibility above the required age of 18. This is explored in (Figure \@ref(fig:voterelig)). (Figure \@ref(fig:voterelig)) showcases the respondent's eligibility to participate in federal elections. As expected, respondents between 15 and 24 years of age have the highest cases of ineligibility. The cases of ineligibility are high for respondents between the age of 25-34 and 35-44. This could be due to several reasons concerning immigration. The cases of respondent ineligibility gradually decrease after the age group 35-44.
+
+After considering the cases of non-voter participation and voter ineligibility, there still exists eligible voters who did not participate in federal elections. (Figure \@ref(fig:novotereason)) explores the reasons for non-participation amongst voters in the federal elections. The main reason behind non-participation amongst respondents is due to interest. There is a high percentage of respondents who did not vote in the last election because they were not interested in voting. The second main reason for non-participation is due to scheduling issues. The participants were unable to make out time in their schedules to vote. This could also be because of the short time frame and prior commitments. Other primary reasons for non-participation were because respondents weren't informed on issues, they were out of town, they didn't like any candidates or campaigns, and felt as though their vote does not make a difference.
+
+```{r votedlast, fig.cap="Voter Participation for Last Federal Elections amongst Respondents",fig.pos="H", echo = FALSE}
+
+##voted last federal elections by Age
+
+all_vote <- 
+  subset(data, (voted!= "Not stated") & (voted!= "Don't know") & (voted!= "Valid skip") &(voted!= "Refusal") & (!is.na(voted))) %>% 
+    ggplot(mapping = aes(x = age_grp, fill = voted)) +
+    geom_bar(position = "dodge")+
+    scale_y_continuous(name="Voting Trend") +
+    scale_x_discrete(name="Age Group") +
+    theme_bw()
+
+
+(all_vote)
+```
+
+```{r voterelig, fig.cap="Voter Eligibility for Last Federal Elections amongst Respondents",fig.pos="H", echo = FALSE}
+
+##Voter Eligibility for Last Federal elections among Respondents by Age
+
+vote_elig <- 
+  subset(data, (vote_elig!= "Not stated") & (vote_elig!= "Don't know") & (vote_elig!= "Valid skip") & (vote_elig!= "Refusal") & (!is.na(vote_elig))) %>% 
+    ggplot(mapping = aes(x = age_grp, fill = vote_elig)) + labs(fill= "Eligibility") +
+    geom_bar(position = "dodge")+
+    scale_y_continuous(name="Voting Trend - Eligibility") +
+    scale_x_discrete(name="Age Group") +
+    theme_bw()
+
+(vote_elig)
+```
+
+```{r novotereason, fig.cap="Why did Respondent not Vote Last Federal Elections?",fig.pos="H", echo = FALSE}
+
+##Main reason they did not vote last federal election 
+
+theme_bw <- 
+  options(repr.plot.width=15, repr.plot.height=6)
+  ggplot(data = subset(data, (no_vote_reason!= "Not stated") & (no_vote_reason!= "Don't know") & (no_vote_reason!= "Refusal") & (no_vote_reason!= "Other - Specify") & (!is.na(no_vote_reason))),  aes(x = no_vote_reason, y = frequency(no_vote_reason), main="No Vote Reason", fill = no_vote_reason)) + labs(fill= "Reason for no vote") +
+         geom_bar(stat = "identity") + 
+         scale_y_continuous(name="Count") + 
+         scale_x_discrete(name="Reasons for No Vote") +
+         theme(axis.text.x=element_blank()) 
+
+
+```
+
+
+### Internet Usage
+
+(Figure \@ref(fig:socnet)) showcases whether respondents have a social networking account according to their age. As expected, the age group 15-24 had a very high ratio of having a social media account. All ages, in general, showcase a high percentage of having a social media account. Here it is essential to note that (Figure \@ref(fig:socnet)) doesn't account for the total population of respondents between age groups. (Figure \@ref(fig:socusefreq)) explores the frequency of access to social media networking accounts amongst respondents. As expected, social media is accessed several times a day for all age groups, followed by accessing social media about once a day. There is a consistent high frequency of access to social media accounts for all age groups except for age group 75 and over. 
+
+```{r socnet, fig.cap="Social networking account - amongst Respondents",fig.pos="H", echo = FALSE}
+
+##Has Social Media Networking Account among Respondents
+
+soc_net <- 
+  subset(data, (soc_net!= "Not stated") & (soc_net!= "Don't know") & (soc_net!= "Valid skip") & (soc_net!= "Refusal") & (!is.na(soc_net))) %>% 
+    ggplot(mapping = aes(x = age_grp, fill = soc_net)) + labs(fill= "Has a Social Media Account") +
+    geom_bar(position = "dodge")+
+    scale_y_continuous(name="Count") +
+    scale_x_discrete(name="Age Group") +
+    theme_bw()
+
+
+(soc_net)
+```
+
+```{r socusefreq, fig.cap="Social networking account - Frequency of access amongst Respondents",fig.pos="H", echo = FALSE}
+
+##Frequency of Access to Social Media in a month among Respondents
+
+soc_freq <- 
+  subset(data, (!is.na(soc_use_freq))) %>% 
+    ggplot(mapping = aes(x = age_grp, fill = soc_use_freq)) + labs(fill= "Access to Social Media in a Month") +
+    geom_bar(position = "dodge")+
+    scale_y_continuous(name="Count") +
+    scale_x_discrete(name="Age Group") +
+    theme_bw()
+
+
+(soc_freq)
+```
+
+(Figure \@ref(fig:buygs)) explores the internet usage to buy goods and services in a month amongst the respondents. As expected, the age group 15-24 has a high percentage to purchase goods and services on the internet and the percentage gradually increases till the age group of 35-44. There also exists a high percentage of respondents between the ages of 15-24 who never use the internet to purchase goods and services. Similarly, (Figure \@ref(fig:elecbank_intuse)) explores the usage of electronic banking on the internet usage for all age groups amongst the respondents. For the ages group 15-24, there exists a large percentage of respondents who use the internet for electronic banking at least once a week, followed by never using the internet, followed by using it once a month, and then once a day. These trends exist similarly for mostly all age groups, with a higher percentage of respondents using the internet once a week, except for the age group 65 and over. 
+
+```{r buygs, fig.cap="Respondent internet usage - buying goods and services",fig.pos="H", echo = FALSE}
+
+##Internet use - Past month - Search - Goods and services
+
+buygs_int <- 
+  subset(data, (buygs_int!= "Not stated") & (buygs_int!= "Don't know") & (buygs_int!= "Valid skip") & (buygs_int!= "Refusal") & (!is.na(buygs_int))) %>% 
+    ggplot(mapping = aes(x = age_grp, fill = buygs_int)) + labs(fill= "Purchased Goods and Services on Internet") +
+    geom_bar(position = "dodge")+
+    scale_y_continuous(name="Count") +
+    scale_x_discrete(name="Age Group") +
+    theme_bw()
+
+
+(buygs_int)
+```
+
+
+```{r elecbank_intuse, fig.cap="Respondent internet usage -  Electronic Banking",fig.pos="H", echo = FALSE}
+
+##Internet use - Past month -Eelectronic banking
+
+elecbank_intuse <- 
+  subset(data, (elecbank_intuse!= "Not stated") & (elecbank_intuse!= "Don't know") & (elecbank_intuse!= "Valid skip") & (elecbank_intuse!= "Refusal") & (!is.na(elecbank_intuse))) %>% 
+    ggplot(mapping = aes(x = age_grp, fill = elecbank_intuse)) + labs(fill= "Electronic Banking on Internet") +
+    geom_bar(position = "dodge")+
+    scale_y_continuous(name="Count") +
+    scale_x_discrete(name="Age Group") +
+    theme_bw()
+
+
+(elecbank_intuse)
+```
+
+
+## Model Methodology
+
+This paper aims to understand the effect of internet usage on voter participation in the federal election. Since voter participation is a binary outcome, logistic regression is best suited for the model. The logistic model helps estimate P, the probability of the outcome variable Y to be successful given the inputs. The survey, General Social Survey: Social Identity, 2013 consisted of multinomial variables, of which variables related to internet usage were selected for the model. No continuous variables were included in the model, so the precision is not affected.
+
+$$P(Y=1|X_k) = {\frac{exp(\beta_0 + \beta_1X_1 + \beta_2X_2 + \beta_3X_3 + \beta_4X_4)}{1 + exp (\beta_0 + \beta_1X_1 + \beta_2X_2 + \beta_3X_3 + \beta_4X_4)}}$$
+
+A binomial logistic regression is performed. Most variables with additional answers, such as “Not stated”, and “Refusal” are removed as these two variables created a broader category. Additional variables relating to the specific province were created for the model. The original variable stated the province was divided into categorical variables of provinces: Alberta, Manitoba, British Columbia, New Brunswick, Newfoundland and Labrador, Nova Scotia, Ontario, Prince Edward Islands, Quebec, and Saskatchewan. They contain 14,382 observations.
+
+It is essential to note that all data models are imperfect, but are useful in ascertaining information. In this model, survey samples were not randomly collected thus due to the design, it does not account for causality and only accounts for correlation. This model operates on observational data, therefore it can leave a false level of confidence when drawing claims, due to which there exists human error and bias in the model and the results. 
+
+# Results
+
+## Findings
+
+The results give some insight about the respondents of the General Social Survey: Social Identify relationship between internet usage and voter participation.  Using the package gtsummary @gtsummary on the regression model, the results of the regression table are shown. 
+
+This table has the following findings. The usage of social media in terms of the respondent owning a social media account had a statistically significant relationship with voter participation. The tendency to buy goods and services online has a statistically significant relationship with voter participation but electronic usage of banking does not have a significant relationship with voter participation. 
+
+According to trends in society and research evidence, it is suggested that changes in communication technology play an important role in influencing electoral behavior (@tolbert). It has been well documented that socio-economic characteristics such as age, gender, ethnicity, and attitudinal factors affect political interest. There has been some evidence that suggests that changes in communication technology such as newspapers, television, and now social media play an important role in electoral behavior (@tolbert). Therefore, it does not come as a surprise that there exists a positive correlation between voter participation and owning a social media account. 
+
+The emergence of the internet and its capabilities in the twenty-first century comes with its own benefits, one of which is ease. It provides the ease of everything by having to press one button. It provides numerous entertainment opportunities to its users as well as reduced the process of acquiring information (@falck). Similarly, minute everyday tasks can now be done digitally. There exists a statistically significant positive relationship between the internet and the purchase of goods and services online, and a negative, statistically insignificant relationship between the internet and electronic banking usage. There exists no identification of the causal relationship between the internet and political behavior.
+
+### The Internet and Voting in Canada 
+
+Voter turnout in Canada has declined in the last several decades in Canada, now being the lowest in the western world (). According to the Library of Parliament of Canada, Canada’s youngest voter age group has turned out to be the lowest voter turnout rate amongst all age groups for federal elections and this disengagement from the electoral participation by Canadian youths has acted significantly on the downward drag of the turnout of the general population (@barnes).  Canadian youngest eligible voters suggest that simply aging and turning into another age cohort would not increase their propensity to vote, as has been the case with the past generations. Therefore, the youngest non-voters would age, and replace old voters who have shown a higher propensity to vote. The overall voter turnout in Canada has not only reached its all-time low but will further continue to drop (@barnes).
+
+
+The emergence of the Internet as the new mass medium of the twenty-first century has changed the mass-media market substantially. Information can now be distributed at high speed, low cost, and more extensively, bringing more egalitarian access to the production and consumption of information (@falck).  That being said, as shown in (Figure \@ref(fig:socnet)), there still exist several individuals in Canada with no access to a social media account. Nevertheless, social media accounts and the internet reduce a significant burden on humankind. 
+
+Earlier, according to a meta-analysis on the internet and voting, the results have been mixed (@tolbert). As per voting is concerned, several times in history has the internet made its ties with voting. In 2016, Barack Obama used the internet to keep in touch with his voters, which was the driving reason for his success in his presidential campaign. According to Milner, the main reason for a lower voter turnout may be due to a lack of information amongst voters, which can be mitigated by the internet, as the internet would help spread information and in turn increase voter turnout. (Figure \@ref(fig:novotereason)) gives an overview of the reasons voters decided not to vote according to the subset of the data frame. Even though observers responded that the main reason may be the lack of interest, not being informed on issues was the second main concern leading to no voter turnout. It is essential to remember marginal groups such as Aboriginal people have not been included in the survey. Therefore, as ethnicity is an important consideration in voting, the lack of inclusion may also lead to non-cohesive information. 
+
+
+### Future Direction
+
+The role of social media and politics has continued to grow exponentially in recent times. Social media has a significant impact on politics in today’s world. Internet and Voter participation may be related but the internet can help reduce the ramifications of a lower voter turnout. Even though the internet can not promise the certainty of a citizen voting, it can help encourage the citizen to vote by increasing voter education and political awareness. In a modern democracy such as Canada, social media and the internet can be used by the Government of Canada to involve citizens in the decision-making process of their society. Social Media is where most people consume their political information nowadays. The Government of Canada can use the internet to disseminate useful information to the youth and the active users of the internet in the form of voter education by forestalling incidences of election violence and electoral manipulations (@paul).  Social Media is the best avenue to reach out to the majority of the voters, especially the youth, who have the lowest turnout rate in Canada. 
+
+
+
+
+\newpage
+
+
+
+
+
+
+
+\newpage
+
+
+**Motivation**
+
+1. *For what purpose was the dataset created? Was there a specific task in mind? Was there a specific gap that needed to be filled? Please provide a description.*
+    - Understanding the demographics of voting is essential for every country to include policies for a larger voter turnout. This paper understands the relationship between the characteristics of an individual such as age, gender, social media usage, internet usage, political engagement, trust in society, and discrimination to predict voting participation and to understand the relationship between them. These findings help implement policies to ensure better voter participation and also understand trends in voter turnout.
+2. *Who created the dataset (for example, which team, research group) and on behalf of which entity (for example, company, institution, organization)?*
+    - General Social Survey
+4. *Any other comments?*
+    - no
+
+**Composition**
+
+1. *What do the instances that comprise the dataset represent (for example, documents, photos, people, countries)? Are there multiple types of instances (for example, movies, users, and ratings; people and interactions between them; nodes and edges)? Please provide a description.*
+	- Respondent information: age, education, marital status, residence, province, number of sexual partners. Internet usage and voting participation
+2. *How many instances are there in total (of each type, if appropriate)?*
+	- One dataframe containing several variables from the  General Social Survey, 2013
+3. *Does the dataset contain all possible instances or is it a sample (not necessarily random) of instances from a larger set? If the dataset is a sample, then what is the larger set? Is the sample representative of the larger set (for example, geographic coverage)? If so, please describe how this representativeness was validated/verified. If it is not representative of the larger set, please describe why not (for example, to cover a more diverse range of instances, because instances were withheld or unavailable).*
+	- It is a subset of the General Social Survey, 2013
+4. *What data does each instance consist of? "Raw" data (for example, unprocessed text or images) or features? In either case, please provide a description.*
+	- It contains a dataframe from questionnaires
+5. *Does the dataset contain data that might be considered confidential. If so, please provide a description.*
+	- There is no confidential data, the dataset is publicly available.
+6. *Does the dataset contain data that, if viewed directly, might be offensive, insulting, threatening, or might otherwise cause anxiety? If so, please describe why.*
+	- TBD
+7. *Does the dataset identify any sub-populations (for example, by age, gender)? If so, please describe how these subpopulations are identified and provide a description of their respective distributions within the dataset.*
+	- The dataset comprises men and women aged 15 years or above.
+8. *Is it possible to identify individuals (that is, one or more natural persons), either directly or indirectly (that is, in combination with other data) from the dataset? If so, please describe how.*
+	-No
+9. *Does the dataset contain data that might be considered sensitive in any way (for example, data that reveals race or ethnic origins, sexual orientations, religious beliefs, political opinions or union memberships, or locations; financial or health data; biometric or genetic data; forms of government identification, such as social security numbers; criminal history)? If so, please provide a description.*
+	- Sensitive information may include but is not limited to: Number of sexual partners for men and women before 18, The Percent of women aged 15-19 and 20-24 married before 18. Percent of men aged 15-19 and 20-24 married before 18. 
+
+
+**Collection process**
+
+1. *How was the data associated with each instance acquired? Was the data directly observable (for example, raw text, movie ratings), reported by subjects (for example, survey responses), or indirectly inferred/derived from other data (for example, part-of-speech tags, model-based guesses for age or language)? If the data was reported by subjects or indirectly inferred/derived from other data, was the data validated/verified? If so, please describe how.*
+	- The data was taken from the General Social Survey, 2013.
+2. *What mechanisms or procedures were used to collect the data (for example, hardware apparatuses or sensors, manual human curation, software programs, software APIs)? How were these mechanisms or procedures validated?*
+	- Household questionnaires, in-person interviews, and other types of model questionnaires were employed. 
+3. *If the dataset is a sample from a larger set, what was the sampling strategy (for example, deterministic, probabilistic with specific sampling probabilities)?*
+	- The enumeration areas are drawn from census files, and samples of households were selected from the areas.
+4. *Who was involved in the data collection process (for example, students, crowdworkers, contractors) and how were they compensated (for example, how much were crowdworkers paid)?*
+	- TBD
+5. *Over what timeframe was the data collected? Does this timeframe match the creation timeframe of the data associated with the instances (for example, recent crawl of old news articles)? If not, please describe the timeframe in which the data associated with the instances was created.*
+	- TBD
+6. *Were any ethical review processes conducted (for example, by an institutional review board)? If so, please provide a description of these review processes, including the outcomes, as well as a link or other access point to any supporting documentation.*
+	- TBD
+7. *Did you collect the data from the individuals in question directly, or obtain it via third parties or other sources (for example, websites)?*
+	- TBD
+8. *Were the individuals in question notified about the data collection? If so, please describe (or show with screenshots or other information) how notice was provided, and provide a link or other access point to, or otherwise reproduce, the exact language of the notification itself.*
+	- TBD
+9. *Did the individuals in question consent to the collection and use of their data? If so, please describe (or show with screenshots or other information) how consent was requested and provided, and provide a link or other access point to, or otherwise reproduce, the exact language to which the individuals consented.*
+	- TBD
+10. *If consent was obtained, were the consenting individuals provided with a mechanism to revoke their consent in the future or for certain uses? If so, please provide a description, as well as a link or other access point to the mechanism (if appropriate).*
+	- TBD
+11. *Has an analysis of the potential impact of the dataset and its use on data subjects (for example, a data protection impact analysis) been conducted? If so, please provide a description of this analysis, including the outcomes, as well as a link or other access point to any supporting documentation.*
+	- TBD
+12. *Any other comments?*
+	- TBD
+
+**Preprocessing/ cleaning/ labeling**
+
+1. *Was any preprocessing/cleaning/labeling of the data done*
+- the data was originally obtained from CHASS. Then into a usable data frame in R using the libraries at r 
+2. *Is the software that was used to preprocess/clean/label the data available?*
+- R software is available at https://www.R-project.org/ 
+
+Uses
+1. *Has the dataset been used for any tasks already?*
+-The dataset has not been used for other tasks yet.
+2. *Is there a repository that links to any or all papers or systems that use the dataset?*
+-
+3. *What (other) tasks could the dataset be used for?*
+The dataset would be used for understanding behavior to voting amongst different socio-economic demographic
+4. *Is there anything about the composition of the dataset or the way it was collected and preprocessed/cleaned/labeled that might impact future uses?*
+- The cleaning process is very specific to the dataset required but it can be collected. 
+
+
+
+Distribution
+
+1. *Will the dataset be distributed to third parties outside of the entity (e.g., company, institution, organization) on behalf of which the dataset was created?*
+-No. The data set is for personal use only.
+2. *How will the dataset will be distributed (e.g., tarball on website, API, GitHub)?*
+-The dataset can be found in the Github repository mentioned in the report.
+3.*When will the dataset be distributed?*
+-The dataset has already been distributed in April 2022. 
+4.*Will the dataset be distributed under a copyright or other intellectual property (IP) license, and/or under applicable terms of use (ToU)?*
+-The report is under the MIT license.
+5. *Have any third parties imposed IP-based or other restrictions on the data associated with the instances?*
+- There are no IP-based or other restrictions on the data.
+6.*Do any export controls or other regulatory restrictions apply to the dataset or to individual instances?*
+-No.
+7. *Any other comments?*
+-None.
+
+Maintenance
+
+1. *Who will be supporting/hosting/maintaining the dataset?*
+-The of the report will be maintaining the dataset. The author is Mahak Jain
+2. *How can the owner/curator/manager of the dataset be contacted (e.g., email address)?*
+-They can be contacted via the email addresses listed in the README file on Github.
+3. *Will the dataset be updated (e.g., to correct labeling errors, add new instances, delete instances)?*
+-No dataset updates are scheduled yet. 
+4. *If the dataset relates to people, are there applicable limits on the retention of the data associated with the instances (e.g., were the individuals in question told that their data would be retained for a fixed period of time and then deleted)?*
+-The data set was collected by the GSS. There are no application limits on the retention of the data since it was collected voluntarily.
+5. *Will older versions of the dataset continue to be supported/hosted/maintained?*
+-No. Only the current data is available for now and future.
+6. *If others want to extend/augment/build on/contribute to the dataset, is there a mechanism for them to do so?*
+-The extensions, augmentations and contributions from other users are not supported.
+
+
+
+# References
+
+
